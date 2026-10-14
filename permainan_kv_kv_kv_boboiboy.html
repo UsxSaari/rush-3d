@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misi BoBoiBoy: Cari Perkataan KV+KV+KV</title>
+    <!-- Menggunakan Tailwind CSS untuk penggayaan yang pantas dan responsif -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Mengimport font komik/kanak-kanak yang menyeronokkan */
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Fredoka', sans-serif;
+            /* Latar belakang bertemakan angkasa (galaxy) */
+            background-color: #0b0c10;
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px),
+                radial-gradient(rgba(255,255,255,.4), rgba(255,255,255,.1) 2px, transparent 30px);
+            background-size: 550px 550px, 350px 350px, 250px 250px, 150px 150px;
+            background-position: 0 0, 40px 60px, 130px 270px, 70px 100px;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Gaya untuk kad */
+        .card-container {
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card-container.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-container.matched .card-inner {
+            transform: rotateY(180deg) scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); /* Cahaya emas apabila sepadan */
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 4px solid;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        /* Bahagian belakang kad (yang kelihatan sebelum diterbalikkan) */
+        .card-front {
+            /* Warna oren ikonik BoBoiBoy */
+            background: linear-gradient(135deg, #ff7e5f, #feb47b); 
+            border-color: #ff5722;
+        }
+
+        .card-front::after {
+            content: '⚡'; /* Logo ringkas kilat BoBoiBoy */
+            font-size: 3rem;
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Bahagian hadapan kad (yang mengandungi gambar/perkataan) */
+        .card-back {
+            background-color: white;
+            color: #333;
+            transform: rotateY(180deg);
+            border-color: #4CAF50; /* Hijau berjaya */
+            padding: 10px;
+            flex-direction: column;
+        }
+
+        .card-image {
+            max-width: 80%;
+            max-height: 70%;
+            object-fit: contain;
+        }
+
+        .card-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 10px;
+            color: #2c3e50;
+        }
+
+        /* Animasi Pop bagi mesej */
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .message-box {
+            animation: popIn 0.5s ease-out forwards;
+            background: rgba(11, 12, 16, 0.9);
+            border: 4px solid #ff7e5f;
+            box-shadow: 0 0 30px rgba(255, 126, 95, 0.5);
+        }
+
+        /* Menggaya watak SVG */
+        .character-svg {
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        /* Tema elemen UI */
+        .btn-theme {
+            background: linear-gradient(to bottom, #ff9800, #f57c00);
+            border-bottom: 4px solid #e65100;
+            transition: all 0.1s;
+        }
+        .btn-theme:active {
+            transform: translateY(4px);
+            border-bottom: 0px;
+        }
+
+        /* Mencegah highlight teks semasa bermain */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body class="no-select">
+
+    <!-- Pengepala Utama -->
+    <header class="text-center py-4 bg-opacity-80 bg-gray-900 border-b-4 border-orange-500 shadow-lg relative z-10">
+        <h1 class="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 uppercase tracking-wider drop-shadow-md">
+            Misi Akademi Bato
+        </h1>
+        <h2 class="text-xl md:text-2xl text-blue-300 mt-2 font-semibold">
+            Cari Pasangan Perkataan KV+KV+KV
+        </h2>
+        
+        <!-- Papan Skor -->
+        <div class="flex justify-center items-center mt-4 space-x-6 text-lg md:text-xl font-bold">
+            <div class="bg-gray-800 px-6 py-2 rounded-full border-2 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)] flex items-center gap-2">
+                <span class="text-gray-300">Masa:</span> 
+                <span id="timer" class="text-yellow-400">00:00</span>
+            </div>
+            <div class="bg-gray-800 px-6 py-2 rounded-full border-2 border-green-400 shadow-[0_0_10px_rgba(74,222,128,0.5)] flex items-center gap-2">
+                <span class="text-gray-300">Kuasa:</span> 
+                <span id="score" class="text-green-400">0 / 6</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hiasan SVG Watak Kiri (BoBoiBoy Angin - Biru) -->
+    <div class="hidden lg:block absolute left-4 top-1/3 character-svg z-0 opacity-80" style="width: 150px; height: 150px;">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="45" fill="#3b82f6" opacity="0.2"/>
+            <path d="M30 60 Q50 90 70 60 Q80 30 50 20 Q20 30 30 60 Z" fill="#60a5fa"/>
+            <!-- Topi/Rambut -->
+            <path d="M25 45 Q50 10 75 45 Z" fill="#1e3a8a"/>
+            <!-- Mata -->
+            <circle cx="40" cy="50" r="5" fill="white"/>
+            <circle cx="60" cy="50" r="5" fill="white"/>
+            <circle cx="42" cy="50" r="2" fill="black"/>
+            <circle cx="62" cy="50" r="2" fill="black"/>
+            <!-- Senyum -->
+            <path d="M45 65 Q50 70 55 65" stroke="white" stroke-width="2" fill="none"/>
+        </svg>
+    </div>
+
+    <!-- Hiasan SVG Watak Kanan (BoBoiBoy Tanah - Coklat) -->
+    <div class="hidden lg:block absolute right-4 top-1/3 character-svg z-0 opacity-80" style="width: 150px; height: 150px;">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="10" width="80" height="80" rx="10" fill="#92400e" opacity="0.2"/>
+            <path d="M25 70 L50 20 L75 70 Z" fill="#b45309"/>
+            <!-- Mata -->
+            <circle cx="40" cy="55" r="5" fill="white"/>
+            <circle cx="60" cy="55" r="5" fill="white"/>
+            <!-- Senyum kental -->
+            <line x1="45" y1="65" x2="55" y2="65" stroke="white" stroke-width="3"/>
+        </svg>
+    </div>
+
+    <!-- Papan Permainan -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4 z-10 relative w-full max-w-5xl mx-auto">
+        
+        <!-- Grid Kad (4 lajur, 3 baris = 12 kad / 6 pasangan) -->
+        <!-- Saiz responsif: grid-cols-2 pada telefon kecil, grid-cols-3 pada tablet, grid-cols-4 pada skrin besar -->
+        <div id="game-board" class="grid grid-cols-3 md:grid-cols-4 gap-3 md:gap-4 w-full max-w-3xl aspect-[3/4] md:aspect-[4/3] lg:aspect-[4/3]">
+            <!-- Kad akan dijana oleh JavaScript di sini -->
+        </div>
+
+        <!-- Butang Kawalan -->
+        <div class="mt-8 space-x-4">
+            <button id="btn-start" class="btn-theme text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg hover:shadow-orange-500/50">
+                Mula Misi!
+            </button>
+            <button id="btn-restart" class="hidden bg-gradient-to-r from-red-500 to-red-700 border-b-4 border-red-900 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg hover:shadow-red-500/50 transition-all active:translate-y-1 active:border-b-0">
+                Misi Semula
+            </button>
+        </div>
+    </main>
+
+    <!-- Modal Kejayaan / Tamat Permainan -->
+    <div id="message-overlay" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="message-box rounded-3xl p-8 max-w-md w-full text-center relative overflow-hidden">
+            <!-- Corak kilat di latar belakang modal -->
+            <div class="absolute inset-0 opacity-10 pointer-events-none flex justify-center items-center">
+                <span class="text-9xl text-yellow-500">⚡</span>
+            </div>
+            
+            <h2 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-500 mb-4 drop-shadow">
+                TERBAIK!
+            </h2>
+            <p class="text-xl text-gray-200 mb-2">Kamu berjaya kumpulkan semua kuasa!</p>
+            
+            <div class="bg-gray-800 rounded-xl p-4 my-6 border border-gray-600 shadow-inner">
+                <p class="text-gray-400 text-sm uppercase font-bold">Masa Misi</p>
+                <p id="final-time" class="text-3xl text-yellow-400 font-mono font-bold mt-1">00:00</p>
+            </div>
+            
+            <div class="flex justify-center mb-6">
+                <!-- Bintang Kejayaan (SVG) -->
+                <svg class="w-12 h-12 text-yellow-400 mx-1 drop-shadow-md animate-bounce" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                <svg class="w-12 h-12 text-yellow-400 mx-1 drop-shadow-md animate-bounce" style="animation-delay: 0.1s" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                <svg class="w-12 h-12 text-yellow-400 mx-1 drop-shadow-md animate-bounce" style="animation-delay: 0.2s" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+            </div>
+
+            <button id="btn-play-again" class="btn-theme w-full text-white font-bold py-4 rounded-full text-xl shadow-lg relative z-10">
+                Teruskan Misi!
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Data Perkataan KV+KV+KV untuk Pemulihan Khas
+        // Pasangan mengandungi perkataan dan URL gambar (menggunakan emoji/SVG placeholder untuk contoh ini)
+        // Kita menggunakan placeholder yang menghasilkan imej dengan warna berbeza supaya menarik
+        const wordsData = [
+            { id: 1, word: "KERETA", image: "🚗" },
+            { id: 2, word: "KAMERA", image: "📷" },
+            { id: 3, word: "PERAHU", image: "🛶" },
+            { id: 4, word: "PETOLA", image: "🥒" },
+            { id: 5, word: "BERUDU", image: "🐸" },
+            { id: 6, word: "KELAPA", image: "🥥" }
+        ];
+
+        // Pembolehubah State Permainan
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        const totalPairs = wordsData.length;
+        
+        let timerInterval;
+        let seconds = 0;
+        let gameStarted = false;
+        let lockBoard = false; // Elak klik pantas sebelum animasi selesai
+
+        // Elemen DOM
+        const gameBoard = document.getElementById('game-board');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const btnStart = document.getElementById('btn-start');
+        const btnRestart = document.getElementById('btn-restart');
+        const messageOverlay = document.getElementById('message-overlay');
+        const finalTimeDisplay = document.getElementById('final-time');
+        const btnPlayAgain = document.getElementById('btn-play-again');
+
+        // Fungsi untuk mencipta dan mencampur kad
+        function initializeGame() {
+            gameBoard.innerHTML = ''; // Kosongkan papan
+            cards = [];
+            flippedCards = [];
+            matchedPairs = 0;
+            updateScore();
+            lockBoard = true; // Kunci sehingga butang Mula ditekan
+
+            // Hasilkan 2 kad (satu teks, satu gambar) untuk setiap pasangan
+            wordsData.forEach(item => {
+                // Kad Teks
+                cards.push({ type: 'text', id: item.id, content: item.word });
+                // Kad Gambar
+                cards.push({ type: 'image', id: item.id, content: item.image });
+            });
+
+            // Goncang/Rawak kedudukan kad (Fisher-Yates Shuffle)
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+
+            // Bina elemen HTML untuk setiap kad
+            cards.forEach((card, index) => {
+                const cardEl = document.createElement('div');
+                cardEl.classList.add('card-container');
+                cardEl.dataset.id = card.id;
+                cardEl.dataset.index = index;
+
+                // Tentukan isi kad belakang (teks atau imej)
+                let backContent = '';
+                if (card.type === 'text') {
+                    backContent = `<div class="card-text">${card.content}</div>`;
+                } else {
+                    // Menggunakan emoji besar sebagai gambar
+                    backContent = `<div class="text-6xl">${card.content}</div>`;
+                }
+
+                cardEl.innerHTML = `
+                    <div class="card-inner w-full h-full">
+                        <div class="card-front"></div>
+                        <div class="card-back">
+                            ${backContent}
+                        </div>
+                    </div>
+                `;
+
+                // Tambah event listener untuk klik kad
+                cardEl.addEventListener('click', () => handleCardClick(cardEl, card));
+                gameBoard.appendChild(cardEl);
+            });
+        }
+
+        // Pengendali Klik Kad
+        function handleCardClick(cardEl, cardData) {
+            // Jangan buat apa-apa jika papan dikunci, permainan belum mula, 
+            // atau kad sudah diterbalikkan/dipadankan
+            if (lockBoard || !gameStarted || cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) {
+                return;
+            }
+
+            // Terbalikkan kad
+            cardEl.classList.add('flipped');
+            flippedCards.push({ element: cardEl, data: cardData });
+
+            // Jika dua kad telah diterbalikkan
+            if (flippedCards.length === 2) {
+                lockBoard = true; // Kunci papan sementara menyemak
+                checkForMatch();
+            }
+        }
+
+        // Semak jika dua kad sepadan
+        function checkForMatch() {
+            const [card1, card2] = flippedCards;
+            
+            // Padan jika ID sama
+            const isMatch = card1.data.id === card2.data.id;
+
+            if (isMatch) {
+                // Tandakan sebagai sepadan
+                setTimeout(() => {
+                    card1.element.classList.add('matched');
+                    card2.element.classList.add('matched');
+                    matchedPairs++;
+                    updateScore();
+                    resetFlippedCards();
+                    
+                    // Semak jika menang
+                    if (matchedPairs === totalPairs) {
+                        gameOver();
+                    }
+                }, 400); // Masa animasi ringkas sebelum ditarik
+            } else {
+                // Tidak sepadan, terbalikkan semula selepas sekejap
+                setTimeout(() => {
+                    card1.element.classList.remove('flipped');
+                    card2.element.classList.remove('flipped');
+                    resetFlippedCards();
+                }, 1000); // Tunjuk kad selama 1 saat sebelum tutup
+            }
+        }
+
+        // Kosongkan array kad sementara
+        function resetFlippedCards() {
+            flippedCards = [];
+            lockBoard = false;
+        }
+
+        // Kemaskini Paparan Skor
+        function updateScore() {
+            scoreDisplay.textContent = `${matchedPairs} / ${totalPairs}`;
+        }
+
+        // Format pemasa (MM:SS)
+        function formatTime(totalSeconds) {
+            const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            const s = (totalSeconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        // Mula Pemasa
+        function startTimer() {
+            clearInterval(timerInterval);
+            seconds = 0;
+            timerDisplay.textContent = formatTime(seconds);
+            timerInterval = setInterval(() => {
+                seconds++;
+                timerDisplay.textContent = formatTime(seconds);
+            }, 1000);
+        }
+
+        // Tamat Permainan
+        function gameOver() {
+            clearInterval(timerInterval);
+            gameStarted = false;
+            finalTimeDisplay.textContent = formatTime(seconds);
+            
+            // Tunjuk modal kejayaan selepas sedikit lengah
+            setTimeout(() => {
+                messageOverlay.classList.remove('hidden');
+                messageOverlay.classList.add('flex');
+            }, 800);
+        }
+
+        // Mulakan Permainan
+        btnStart.addEventListener('click', () => {
+            gameStarted = true;
+            lockBoard = false;
+            startTimer();
+            btnStart.classList.add('hidden');
+            btnRestart.classList.remove('hidden');
+        });
+
+        // Mula Semula Permainan semasa bermain
+        btnRestart.addEventListener('click', () => {
+            clearInterval(timerInterval);
+            seconds = 0;
+            timerDisplay.textContent = "00:00";
+            gameStarted = false;
+            btnStart.classList.remove('hidden');
+            btnRestart.classList.add('hidden');
+            initializeGame();
+        });
+
+        // Main Semula dari Modal Kejayaan
+        btnPlayAgain.addEventListener('click', () => {
+            messageOverlay.classList.add('hidden');
+            messageOverlay.classList.remove('flex');
+            
+            // Set semula paparan butang atas
+            btnStart.classList.remove('hidden');
+            btnRestart.classList.add('hidden');
+            
+            // Sediakan papan baru, tapi tunggu pengguna tekan 'Mula'
+            timerDisplay.textContent = "00:00";
+            initializeGame();
+        });
+
+        // Sediakan papan ketika halaman dimuat
+        window.onload = initializeGame;
+
+    </script>
+</body>
+</html>
